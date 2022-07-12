@@ -1,78 +1,106 @@
-import React, { useState } from "react"
-import { Switch, Route } from "react-router-dom"
-import Header from "./Header"
-import Home from "./Home/Home"
-import Study from "./Study/Study"
-import AddCard from "./Decks/AddCard"
-import EditCard from "./Decks/EditCard"
-import CreateDeck from "./Decks/CreateDeck"
-import Deck from "./Decks/Deck"
-import EditDeck from "./Decks/EditDeck"
-import NotFound from "./NotFound"
-
+import React, { useEffect, useState } from "react";
+import Header from "./Header";
+import NotFound from "./NotFound";
+import CreateBtn from "./CreateBtn";
+import ListDecks from "../Decks/ListDecks";
+import DeckView from "../Decks/DeckView";
+import Study from "../Decks/Study";
+import CreateDeck from "../Decks/CreateDeck";
+import EditDeck from "../Decks/EditDeck";
+import AddCard from "../Decks/Cards/AddCard";
+import EditCard from "../Decks/Cards/EditCard";
+import {
+  deleteDeck,
+  listDecks,
+} from "../utils/api/index";
+import { Switch, Route, useHistory } from "react-router-dom";
 
 function Layout() {
-  const [deckLength, setDeckLength] = useState(0)
-  // update the decks by adding the total number of decks together
-  const updateDecks = (newDecks) => {
-    setDeckLength(() => deckLength + newDecks)
+  const [deckList, setDeckList] = useState([]);
+  const history = useHistory();
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const loadDecks = async () => {
+      try {
+        const decks = await listDecks(abortController.signal);
+        setDeckList(...deckList, decks);
+      } catch (error) {
+        console.log(error.message);
+      }
+    };
+    loadDecks();
+    return () => abortController.abort;
+  }, []);
+
+  const callDelete = async (id) => {
+    const abortController = new AbortController();
+    
+    try {
+      setDeckList(deckList.filter((deck) => deck.id !== id));
+      await deleteDeck(id, abortController.signal);
+      history.push("/");
+    } catch (error) {
+      console.log(error.message);
+    }
+
+    return () => abortController.abort;
+  };
+
+  const deleteHandler = (id) => {
+    if (
+      window.confirm(
+        `Delete this deck? ${id}\n\nYou will not be able to recover it.`
+      )
+        ? callDelete(id)
+        : history.push("/")
+    )
+  {}
+};
+  if(!deckList){
+    return  (
+    <div className="container mb-5">
+    <Header />
+    <div>LOADING</div>
+    </div>)
   }
- 
+  else{
   return (
     <div>
-
-      {/* header component */}
       <Header />
-
-      <div className="container mb-4">
-        {/* TODO: Implement the screen starting here */}
-
+      <div className="container mb-5">
         <Switch>
-    
-          {/* home component */}
-          <Route path="/" exact>
-            <Home updateDecks={updateDecks} deckLength={deckLength} />
+          <Route exact path="/">
+            <CreateBtn />
+            <ListDecks deckList={deckList} deleteHandler={deleteHandler} />
           </Route>
-           {/* createDeck component */}
-          <Route path="/decks/new">
-            <CreateDeck updateDecks={updateDecks} />
+          <Route exact path="/decks/new">
+            <CreateDeck deckList={deckList} setDeckList={setDeckList} />
           </Route>
-
-           {/* deck component */}
-          <Route path="/decks/:deckId" exact>
-            <Deck updateDecks={updateDecks} />
-          </Route>
-
-           {/* study component */}
           <Route path="/decks/:deckId/study">
             <Study />
           </Route>
-
-           {/* edit deck component */}
+          <Route exact path="/decks/:deckId">
+            <DeckView deleteHandler={deleteHandler} />
+          </Route>
           <Route path="/decks/:deckId/edit">
-            <EditDeck updateDecks={updateDecks} />
+            <EditDeck />
           </Route>
-
-           {/* add card component */}
           <Route path="/decks/:deckId/cards/new">
-            <AddCard updateDecks={updateDecks} />
+            <AddCard />
           </Route>
-
-           {/* edit card component */}
           <Route path="/decks/:deckId/cards/:cardId/edit">
-            <EditCard updateDecks={updateDecks} />
+            <EditCard />
           </Route>
-
-           {/* not found component for errors */}
           <Route>
-            <NotFound />  
+            <NotFound />
           </Route>
-
         </Switch>
-        
       </div>
+
     </div>
-  )
+  );}
 }
 
-export default Layout
+export default Layout;

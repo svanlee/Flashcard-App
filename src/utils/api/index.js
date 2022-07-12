@@ -2,7 +2,7 @@
  * Defines the base URL for the API.
  * The default values is overridden by the `API_BASE_URL` environment variable.
  */
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8080";
 
 /**
  * Defines the default headers for these functions to work with `json-server`
@@ -107,9 +107,7 @@ export async function createDeck(deck, signal) {
 export async function readDeck(deckId, signal) {
   const url = `${API_BASE_URL}/decks/${deckId}?_embed=cards`;
   return await fetchJson(url, { signal }, {});
-}// Deleted ", {}" from the end of { signal }
-
-
+}
 
 /**
  * Updates an existing deck
